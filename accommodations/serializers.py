@@ -7,7 +7,7 @@ class AccommodationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Accommodation
-        fields = ['id', 'name', 'description', 'price', 'location']
+        fields = ['id', 'name', 'description', 'price', 'location', 'type']
         read_only_fields = ['id']
 
     def validate_name(self, value):
