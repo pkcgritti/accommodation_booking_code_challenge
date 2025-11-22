@@ -17,6 +17,7 @@ class Accommodation(models.Model):
 
     class Meta:
         db_table = "accommodation"
+        ordering = ["id"]
 
     def __str__(self):
         return self.name
