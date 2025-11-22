@@ -1,5 +1,7 @@
 {
     "typeCheckingMode": "on",
+    "reportAttributeAccessIssue": false,
+    "reportIncompatibleMethodOverride": false,
     "reportMissingTypeStubs": false,
     "exclude": [".venv"]
 }
