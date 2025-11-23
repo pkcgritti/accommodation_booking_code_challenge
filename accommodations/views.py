@@ -1,6 +1,9 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import generics
+from rest_framework import generics, serializers
+from rest_framework.response import Response
+
+from bookings.models import Booking
 
 from .models import Accommodation, AccommodationType
 from .serializers import AccommodationSerializer
@@ -82,3 +85,74 @@ class AccommodationDetailView(generics.RetrieveUpdateDestroyAPIView):
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
+
+
+class AccommodationAvailabilityView(generics.GenericAPIView):
+    """Check if an accommodation is available at a given date"""
+
+    queryset = Accommodation.objects.all()
+
+    class RequestSerializer(serializers.Serializer):
+        """Serializer to validate query input parameter"""
+
+        date = serializers.DateField()
+
+    class AvailabilityResponse(serializers.Serializer):
+        """Serializer for availability response"""
+
+        accommodation_id = serializers.IntegerField()
+        next_available_date = serializers.DateField()
+
+    @extend_schema(
+        summary="Get next available date",
+        description="Given a reference date, returns the next available date for the accommodation",
+        tags=["Accommodations"],
+        parameters=[
+            OpenApiParameter(
+                name="date",
+                description="Reference date (YYYY-MM-DD)",
+                required=True,
+                type=OpenApiTypes.DATE,
+            ),
+        ],
+        responses={
+            200: AvailabilityResponse,
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        accommodation = self.get_object()
+
+        request_serializer = self.RequestSerializer(data=request.query_params)
+        request_serializer.is_valid(raise_exception=True)
+
+        if accommodation.type != AccommodationType.APARTMENT:
+            serializer = self.AvailabilityResponse(
+                {
+                    "accommodation_id": accommodation.id,
+                    "next_available_date": request_serializer.data.get("date"),
+                }
+            )
+            return Response(serializer.data)
+
+        queryset = Booking.objects.filter(
+            accommodation_id=accommodation.id,
+            end_date__gte=request_serializer.data.get("date"),
+        ).order_by("start_date")
+
+        next_available_date = (request_serializer.validated_data or {}).get("date")
+        for booking in queryset:
+            if (
+                next_available_date < booking.start_date
+                or next_available_date >= booking.end_date
+            ):
+                break
+            next_available_date = booking.end_date
+
+        serializer = self.AvailabilityResponse(
+            {
+                "accommodation_id": accommodation.id,
+                "next_available_date": next_available_date,
+            }
+        )
+
+        return Response(serializer.data)
