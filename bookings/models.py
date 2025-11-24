@@ -43,6 +43,8 @@ class VoiceNote(models.Model):
         choices=Status.choices,
         default=Status.PENDING,
     )
+    file_name = models.TextField(blank=True)
+    file_type = models.CharField(max_length=30, blank=True)
 
     @property
     def storage_key(self) -> VoiceNoteStorageKey:
