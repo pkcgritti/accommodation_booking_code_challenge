@@ -53,4 +53,4 @@ class VoiceNote(models.Model):
         ordering = ["id"]
 
     def __str__(self):
-        return f"Voice note - {self.status} - {self.booking.guest_name} - {self.accommodation.name}"
+        return f"Voice note for {self.booking.guest_name} - {self.status}"
