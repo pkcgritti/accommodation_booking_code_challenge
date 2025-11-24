@@ -1,0 +1,14 @@
+[project]
+name = "accommodation_booking"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[tool.black]
+target-version = ["py311"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+force_single_line = false
+use_parentheses = true

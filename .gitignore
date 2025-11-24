@@ -1,3 +1,9 @@
 # python related
 __pycache__/
 .venv/
+
+# Local config
+.env
+
+# Data directory
+data/
