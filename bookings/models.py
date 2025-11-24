@@ -1,6 +1,7 @@
 from django.db import models
 
 from accommodations.models import Accommodation
+from bookings.valueobjects import VoiceNoteStorageKey
 
 
 class Booking(models.Model):
@@ -22,3 +23,34 @@ class Booking(models.Model):
     def __str__(self):
         return f"{self.guest_name} - {self.accommodation.name} ({self.start_date} to {self.end_date})"
 
+
+class VoiceNote(models.Model):
+    """Voice note model"""
+
+    class Status(models.TextChoices):
+        PENDING = ("pending", "Pending")
+        SUCCEEDED = ("succeeded", "Succeeded")
+        FAILED = ("failed", "Failed")
+
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name="voicenotes",
+    )
+    transcript = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+
+    @property
+    def storage_key(self) -> VoiceNoteStorageKey:
+        return VoiceNoteStorageKey(self.booking.id, self.id)
+
+    class Meta:
+        db_table = "voicenote"
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"Voice note - {self.status} - {self.booking.guest_name} - {self.accommodation.name}"
