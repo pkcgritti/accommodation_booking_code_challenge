@@ -1,13 +1,12 @@
 from django.db import models
 
 
-class AccommodationType(models.TextChoices):
-    APARTMENT = ("apartment", "Apartment")
-    HOTEL = ("hotel", "Hotel")
-
-
 class Accommodation(models.Model):
     """Accommodation model"""
+
+    class AccommodationType(models.TextChoices):
+        APARTMENT = ("apartment", "Apartment")
+        HOTEL = ("hotel", "Hotel")
 
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)

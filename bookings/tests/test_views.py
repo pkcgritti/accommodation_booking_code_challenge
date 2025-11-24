@@ -1,7 +1,7 @@
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from accommodations.models import Accommodation, AccommodationType
+from accommodations.models import Accommodation
 from bookings.models import Booking
 
 
@@ -13,7 +13,7 @@ class BookingEndpointTests(APITestCase):
             description="",
             price="100.0",
             location="City",
-            type=AccommodationType.APARTMENT,
+            type=Accommodation.AccommodationType.APARTMENT,
         )
 
         self._hotel = Accommodation.objects.create(
@@ -21,7 +21,7 @@ class BookingEndpointTests(APITestCase):
             description="",
             price="100.0",
             location="City",
-            type=AccommodationType.HOTEL,
+            type=Accommodation.AccommodationType.HOTEL,
         )
 
         Booking.objects.create(

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from accommodations.models import Accommodation, AccommodationType
+from accommodations.models import Accommodation
 
 from .models import Booking
 
@@ -49,7 +49,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
         accommodation_id = data.get("accommodation_id")
         accommodation = Accommodation.objects.get(id=accommodation_id)
-        if accommodation.type == AccommodationType.APARTMENT:
+        if accommodation.type == Accommodation.AccommodationType.APARTMENT:
             queryset = Booking.objects.filter(
                 accommodation=accommodation,
                 start_date__lt=end_date,

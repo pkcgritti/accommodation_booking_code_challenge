@@ -1,7 +1,7 @@
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from accommodations.models import Accommodation, AccommodationType
+from accommodations.models import Accommodation
 from bookings.models import Booking
 
 
@@ -85,7 +85,7 @@ class AccommodationEndpointTests(APITestCase):
 
         response = self.client.post(url, payload, format="json")
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.data["type"], AccommodationType.APARTMENT)  # type: ignore
+        self.assertEqual(response.data["type"], Accommodation.AccommodationType.APARTMENT)  # type: ignore
 
     def test_availability(self):
         cases = [

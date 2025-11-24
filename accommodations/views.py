@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from bookings.models import Booking
 
-from .models import Accommodation, AccommodationType
+from .models import Accommodation
 from .serializers import AccommodationSerializer
 
 
@@ -24,7 +24,7 @@ class AccommodationListCreateView(generics.ListCreateAPIView):
                 description="Filter by accommodation type",
                 required=False,
                 type=OpenApiTypes.STR,
-                enum=[t.value for t in AccommodationType],
+                enum=[t.value for t in Accommodation.AccommodationType],
             )
         ],
         tags=["Accommodations"],
@@ -125,7 +125,7 @@ class AccommodationAvailabilityView(generics.GenericAPIView):
         request_serializer = self.RequestSerializer(data=request.query_params)
         request_serializer.is_valid(raise_exception=True)
 
-        if accommodation.type != AccommodationType.APARTMENT:
+        if accommodation.type != Accommodation.AccommodationType.APARTMENT:
             serializer = self.AvailabilityResponse(
                 {
                     "accommodation_id": accommodation.id,
