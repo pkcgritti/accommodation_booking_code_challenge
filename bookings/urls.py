@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     BookingDetailView,
     BookingListCreateView,
+    VoiceNoteAudioDownloadView,
     VoiceNoteDetailView,
     VoiceNoteListCreateView,
 )
@@ -19,5 +20,10 @@ urlpatterns = [
         "<int:booking_id>/voice-notes/<int:pk>/",
         VoiceNoteDetailView.as_view(),
         name="voice-note-detail",
+    ),
+    path(
+        "<int:booking_id>/voice-notes/<int:pk>/audio/",
+        VoiceNoteAudioDownloadView.as_view(),
+        name="voice-note-audio",
     ),
 ]

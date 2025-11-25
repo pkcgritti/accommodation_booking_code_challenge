@@ -37,6 +37,7 @@ NOTE: In case you want to create a private git repository, please grant the user
   - `GET /bookings/<booking_id>/voice-notes/`
   - `POST /bookings/<booking_id>/voice-notes/` (multipart `audio_file`) → saves file and enqueues transcription
   - `GET /bookings/<booking_id>/voice-notes/<id>/`
+  - `GET /bookings/<booking_id>/voice-notes/<id>/audio/` (download original audio)
   - `DELETE /bookings/<booking_id>/voice-notes/<id>/`
 
 ## Data models
@@ -148,6 +149,7 @@ This section is intentionally open-ended: you may choose any tools, libraries, s
   - the transcript text  
   - creation timestamp  
 - Optionally expose a way to download or play the original audio file.
+  - Download: `GET /bookings/{booking_id}/voice-notes/{voice_note_id}/audio/` returns the stored audio bytes with the original filename and MIME type.
 
 ---
 
@@ -589,6 +591,7 @@ Create a `.env` file based on `env.example`:
   - `GET /bookings/<booking_id>/voice-notes/`
   - `POST /bookings/<booking_id>/voice-notes/` (multipart `audio_file`)
   - `GET /bookings/<booking_id>/voice-notes/<id>/`
+  - `GET /bookings/<booking_id>/voice-notes/<id>/audio/` (download original audio)
   - `DELETE /bookings/<booking_id>/voice-notes/<id>/`
 
 ## 🗂️ Data Models (implemented)
@@ -701,6 +704,7 @@ The project uses the following key dependencies (see `requirements.txt` for vers
   - `GET /bookings/<booking_id>/voice-notes/`  
   - `POST /bookings/<booking_id>/voice-notes/` (multipart `audio_file`) → saves file locally and enqueues transcription  
   - `GET /bookings/<booking_id>/voice-notes/<id>/`  
+  - `GET /bookings/<booking_id>/voice-notes/<id>/audio/` (download original audio)  
   - `DELETE /bookings/<booking_id>/voice-notes/<id>/`
 
 ## Current data models
@@ -735,4 +739,3 @@ docker compose run --rm web python manage.py test
 - Celery runs fire-and-forget (no result backend). If you need task result tracking, enable a backend (Redis/RPC) and adjust settings.
 
 ---
-

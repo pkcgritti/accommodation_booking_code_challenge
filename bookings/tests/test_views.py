@@ -154,3 +154,31 @@ class VoiceNoteEndpointTests(APITestCase):
         url = reverse("voice-note-list-create", kwargs={"booking_id": self.booking.id})
         response = self.client.post(url, {}, format="multipart")
         self.assertEqual(response.status_code, 400)
+
+    @patch(
+        "accommodation_booking.infrastructure.local.file_storage.LocalFileStorage.load_file"
+    )
+    def test_should_download_voice_note_audio(self, mock_load_file):
+        mock_load_file.return_value = b"audio-bytes"
+        voice_note = VoiceNote.objects.create(
+            booking=self.booking,
+            transcript="",
+            status=VoiceNote.Status.SUCCEEDED,
+            file_name="note.mp3",
+            file_type="audio/mpeg",
+        )
+
+        url = reverse(
+            "voice-note-audio",
+            kwargs={"booking_id": self.booking.id, "pk": voice_note.id},
+        )
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"audio-bytes")
+        self.assertEqual(response["Content-Type"], "audio/mpeg")
+        self.assertEqual(
+            response["Content-Disposition"], 'attachment; filename="note.mp3"'
+        )
+        mock_load_file.assert_called_once_with(voice_note.storage_key.as_string())

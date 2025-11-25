@@ -1,11 +1,14 @@
 from logging import getLogger
 
 from dependency_injector.wiring import Provide, inject
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.views import Response
+from django.http import HttpResponse
 
+from accommodation_booking.application.protocols.file_storage import FileStorage
 from accommodation_booking.container import ApplicationContainer, UseCases
 
 from .models import Booking, VoiceNote
@@ -151,6 +154,51 @@ class VoiceNoteListCreateView(generics.ListCreateAPIView):
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
+
+
+class VoiceNoteAudioDownloadView(generics.GenericAPIView):
+    """Download the raw audio file for a voice note"""
+
+    serializer_class = VoiceNoteSerializer
+
+    def get_queryset(self):
+        return VoiceNote.objects.filter(booking_id=self.kwargs["booking_id"])
+
+    @extend_schema(
+        summary="Download voice note audio",
+        description="Download the original audio file for a voice note",
+        tags=["VoiceNotes"],
+        responses={
+            200: OpenApiTypes.BINARY,
+            404: {
+                "type": "object",
+                "properties": {"message": {"type": "string"}},
+            },
+        },
+    )
+    @inject
+    def get(
+        self,
+        request,
+        file_storage: FileStorage = Provide[ApplicationContainer.file_storage],
+        *args,
+        **kwargs,
+    ):
+        voice_note = self.get_object()
+        try:
+            audio_file = file_storage.load_file(voice_note.storage_key.as_string())
+        except FileNotFoundError:
+            return Response(
+                {"message": "Audio file not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        file_name = voice_note.file_name or voice_note.storage_key.as_string()
+        content_type = voice_note.file_type or "application/octet-stream"
+
+        response = HttpResponse(audio_file, content_type=content_type)
+        response["Content-Disposition"] = f'attachment; filename="{file_name}"'
+        return response
 
 
 class VoiceNoteDetailView(generics.RetrieveDestroyAPIView):
