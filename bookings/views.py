@@ -135,6 +135,11 @@ class VoiceNoteListCreateView(generics.ListCreateAPIView):
                 file_name,
                 file_type,
             )
+        except ValueError as ex:
+            logger.exception(ex)
+            return Response(
+                {"message": str(ex)}, status=status.HTTP_400_BAD_REQUEST
+            )
         except Exception as ex:
             logger.exception(ex)
             return Response(

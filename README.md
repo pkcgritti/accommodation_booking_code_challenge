@@ -17,6 +17,63 @@ NOTE: In case you want to create a private git repository, please grant the user
 
 ---
 
+# Current implementation (added by author)
+
+## Summary
+- Accommodation types: hotel/apartment; apartments block overlapping bookings, hotels allow overlaps.
+- Availability API returns the next available date for apartments; hotels accept overlaps and return the requested date.
+- Voice notes: multipart upload saved to local storage, async transcription via Celery + RabbitMQ using OpenAI Whisper; status goes pending → succeeded/failed.
+- Dependency Injector wires file storage and transcription service.
+
+## Available endpoints
+- Accommodations:
+  - `GET/POST /accommodations/`
+  - `GET/PUT/PATCH/DELETE /accommodations/<id>/`
+  - `GET /accommodations/<id>/availability?date=YYYY-MM-DD`
+- Bookings:
+  - `GET/POST /bookings/`
+  - `GET/PUT/PATCH/DELETE /bookings/<id>/`
+- Voice Notes (nested under bookings):
+  - `GET /bookings/<booking_id>/voice-notes/`
+  - `POST /bookings/<booking_id>/voice-notes/` (multipart `audio_file`) → saves file and enqueues transcription
+  - `GET /bookings/<booking_id>/voice-notes/<id>/`
+  - `DELETE /bookings/<booking_id>/voice-notes/<id>/`
+
+## Data models
+- `Accommodation`: type (hotel/apartment), name, description, price, location.
+- `Booking`: FK to accommodation, start_date, end_date, guest_name.
+- `VoiceNote`: FK to booking, transcript, status (pending/succeeded/failed), file_name, file_type; storage key derived from booking/id.
+
+## Project structure (top-level)
+- `accommodation_booking/` — Django project, settings, DI container, Celery app.
+- `accommodations/` — accommodations app (models/serializers/views/tests).
+- `bookings/` — bookings + voice notes (models/serializers/views/tests).
+- `data/` — local storage path for voice-note audio (mounted via volume).
+- `compose.yml`, `Dockerfile`, `requirements*.txt`, `env.example` — infra and dependencies.
+
+## Environment variables (used)
+- Core: `DEBUG`, `SECRET_KEY`
+- Database: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+- Celery: `CELERY_BROKER_URL` (fire-and-forget; no result backend configured)
+- OpenAI: `OPENAI_API_KEY`, `OPENAI_MODEL` (default `whisper-1`), `OPENAI_LANGUAGE` (default `en`)
+- Storage: `LOCAL_FILE_STORAGE_DIRECTORY` (default `./data`, shared volume for web/worker)
+- Transcription: `TRANSCRIPTION_PROVIDER` (default `local`, but can be set to `openai`)
+
+## Local setup (Docker Compose)
+1) Copy `env.example` to `.env` and adjust values.  
+2) Build and start services (web, worker, RabbitMQ, Postgres):
+   ```bash
+   docker compose up --build
+   ```
+3) Apply migrations:
+   ```bash
+   docker compose run --rm web python manage.py migrate
+   ```
+4) API: http://localhost:8006  
+   RabbitMQ UI: http://localhost:15672 (user/pass: `rabbitmq` / `rabbitmq`)
+
+---
+
 # Problem #1
 
 ### Issue to solve
@@ -197,8 +254,6 @@ Please include (at least):
    - how you monitored inference  
    - metrics you tracked (latency, drift, error rates, etc.)  
 7. What you would do differently with the benefit of hindsight.
-
-Note: Do not include anything confidential. High-level descriptions and ranges are fine.
 
 ---
 
@@ -492,19 +547,54 @@ tech-challenge-python/
 └── README.md          # This documentation
 ```
 
+Additional structure (Clean Architecture Inspired):
+- `accommodation_booking/application/` — application layer
+  - `protocols/` — interfaces (e.g., `file_storage`, `transcription_service`, `voice_note_repository`)
+  - `commands/` — orchestrations for background work (e.g., `transcribe_voice_note.py`)
+  - `usecases/` — use-case services (e.g., `create_voice_note.py`)
+- `accommodation_booking/infrastructure/` — implementations of application protocols
+  - `local/file_storage.py` — local storage backend (uses `LOCAL_FILE_STORAGE_DIRECTORY`)
+  - `openai/transcription_service.py` — Whisper-based transcription via OpenAI API
+- `accommodation_booking/container.py` — dependency injection wiring (providers for storage, transcription, use cases)
+
 ## 🌐 Environment Variables
 
 Create a `.env` file based on `env.example`:
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `DEBUG` | Enable debug mode | `True` | No |
-| `SECRET_KEY` | Django secret key | `django-insecure-your-secret-key-here` | Yes (change in production) |
+| `CELERY_BROKER_URL` | Celery broker (RabbitMQ) | `amqp://rabbitmq:rabbitmq@rabbitmq:5672//` | No |
 | `DB_HOST` | Database host | `localhost` | No |
-| `DB_PORT` | Database port | `5432` | No |
 | `DB_NAME` | Database name | `accommodation_booking` | No |
-| `DB_USER` | Database user | `postgres` | No |
 | `DB_PASSWORD` | Database password | `postgres` | No |
+| `DB_PORT` | Database port | `5432` | No |
+| `DB_USER` | Database user | `postgres` | No |
+| `DEBUG` | Enable debug mode | `True` | No |
+| `LOCAL_FILE_STORAGE_DIRECTORY` | Path for voice-note audio storage | `./data` | No |
+| `OPENAI_API_KEY` | API key for transcription | _none_ | Yes (to transcribe if `openai` provider selected) |
+| `OPENAI_LANGUAGE` | Default transcription language | `en` | No |
+| `OPENAI_MODEL` | Whisper model | `whisper-1` | No |
+| `SECRET_KEY` | Django secret key | `django-insecure-your-secret-key-here` | Yes (change in production) |
+| `TRANSCRIPTION_PROVIDER` | Select between `local` and `openai` transcription provider | `local` | No |
+
+## 📡 Available Endpoints (implemented)
+- Accommodations:
+  - `GET/POST /accommodations/`
+  - `GET/PUT/PATCH/DELETE /accommodations/<id>/`
+  - `GET /accommodations/<id>/availability?date=YYYY-MM-DD`
+- Bookings:
+  - `GET/POST /bookings/`
+  - `GET/PUT/PATCH/DELETE /bookings/<id>/`
+- Voice Notes (nested under bookings):
+  - `GET /bookings/<booking_id>/voice-notes/`
+  - `POST /bookings/<booking_id>/voice-notes/` (multipart `audio_file`)
+  - `GET /bookings/<booking_id>/voice-notes/<id>/`
+  - `DELETE /bookings/<booking_id>/voice-notes/<id>/`
+
+## 🗂️ Data Models (implemented)
+- `Accommodation`: type (hotel/apartment), name, description, price, location.
+- `Booking`: FK accommodation, start_date, end_date, guest_name; apartments block overlaps.
+- `VoiceNote`: FK booking, transcript, status (pending/succeeded/failed), file_name, file_type; storage key derived from booking/id.
 
 ## 🧪 Testing the API
 
@@ -538,6 +628,8 @@ curl -X POST http://localhost:8006/bookings/ \
   }'
 ```
 
+---
+
 ## 🚨 Current Dependencies
 
 The project uses the following key dependencies (see `requirements.txt` for versions):
@@ -548,3 +640,99 @@ The project uses the following key dependencies (see `requirements.txt` for vers
 - `drf-spectacular==0.27.0` - API documentation
 - `django-cors-headers==4.3.1` - CORS handling
 - `python-dotenv==1.0.0` - Environment variable management 
+- `dependency-injector==4.48.2` - Dependency injection containers for Python
+- `requests==2.32.5` - Synchronous HTTP requests
+- `celery==5.5.3` - Command queue
+- `faster-whisper==1.2.1` - Local transcription provider
+
+---
+
+## 🔧 Current Development Dependencies
+
+- `django-stubs==5.2.7` - Django annotatted types
+- `black==25.11.0` - Code formatting
+- `isort==7.0.0` - Organize imports
+
+---
+
+# Solution overview (added by author)
+
+## Current implementation
+- Accommodation types: hotel/apartment; apartments block overlapping bookings; hotels allow overlaps.
+- Availability endpoint returns the next available date for apartments, immediate date for hotels.
+- Voice notes: multipart upload saved to local storage, async transcription via Celery + RabbitMQ using OpenAI Whisper; status transitions pending → succeeded/failed.
+- DI (dependency-injector) wires file storage and transcription service.
+
+## Stack
+- Django + DRF, Postgres, RabbitMQ, Celery (fire-and-forget), OpenAI Whisper for transcription.
+- Voice notes: upload stored on a shared local volume (`data/`); Celery worker reads the file and transcribes asynchronously.
+- Dependency Injector wires `file_storage` (local) and `transcription_service` (OpenAI).
+
+## Environment variables
+- `DEBUG`  
+- `SECRET_KEY`  
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`  
+- `CELERY_BROKER_URL` (e.g. `amqp://rabbitmq:rabbitmq@rabbitmq:5672//`)  
+- `OPENAI_API_KEY`, `OPENAI_MODEL` (default `whisper-1`), `OPENAI_LANGUAGE` (default `en`)  
+- `LOCAL_FILE_STORAGE_DIRECTORY` (default `./data`, shared volume path)
+
+## Run locally (Docker Compose)
+1) Copy `env.example` to `.env` and adjust values.  
+2) Build and start services (web, worker, RabbitMQ, Postgres):
+   ```bash
+   docker compose up --build
+   ```
+3) Apply migrations:
+   ```bash
+   docker compose run --rm web python manage.py migrate
+   ```
+4) API: http://localhost:8006  
+   RabbitMQ UI: http://localhost:15672 (user/pass: `rabbitmq` / `rabbitmq`)
+
+## Available endpoints
+- Accommodations:  
+  - `GET/POST /accommodations/`  
+  - `GET/PUT/PATCH/DELETE /accommodations/<id>/`  
+  - `GET /accommodations/<id>/availability?date=YYYY-MM-DD`
+- Bookings:  
+  - `GET/POST /bookings/`  
+  - `GET/PUT/PATCH/DELETE /bookings/<id>/` (apartments block overlapping dates)
+- Voice Notes (nested):  
+  - `GET /bookings/<booking_id>/voice-notes/`  
+  - `POST /bookings/<booking_id>/voice-notes/` (multipart `audio_file`) → saves file locally and enqueues transcription  
+  - `GET /bookings/<booking_id>/voice-notes/<id>/`  
+  - `DELETE /bookings/<booking_id>/voice-notes/<id>/`
+
+## Current data models
+- `Accommodation`: type (hotel/apartment), name, description, price, location.
+- `Booking`: FK to accommodation, start_date, end_date, guest_name (ordering by id).
+- `VoiceNote`: FK to booking, transcript, status (pending/succeeded/failed), file_name, file_type; storage key derived from booking/id.
+
+## Project structure (top-level)
+- `accommodation_booking/` — Django project, settings, DI container, Celery app.
+- `accommodations/` — app for accommodations (models, serializers, views, tests).
+- `bookings/` — app for bookings and voice notes (models, serializers, views, tests).
+- `data/` — local storage path for voice-note audio (mounted via volume).
+- `compose.yml`, `Dockerfile`, `requirements*.txt`, `env.example` — infra and dependencies.
+
+## Voice notes flow
+- Upload `multipart/form-data` with `audio_file`.  
+- Accepted audio MIME types: `audio/mpeg`, `audio/mp3`, `audio/mpga`, `audio/mpeg3`, `audio/mp4`, `audio/aac`, `audio/x-aac`, `audio/wav`, `audio/x-wav`, `audio/flac`, `audio/x-flac`, `audio/ogg`, `audio/opus`, `audio/webm`.  
+- Video MIME types remapped: `video/mp4`, `video/mpeg`, `video/webm`.  
+- Status lifecycle: `pending` → `succeeded` or `failed`. Files stored as `booking########-voicenote########` under `data/`.
+
+## Design notes
+- Problem #3: availability endpoint returns `{accommodation_id, next_available_date}`; apartments scan bookings for the first gap, hotels allow overlaps and return the requested date.  
+- Problem #4: async chosen to avoid blocking web workers on long transcribes; sync would be simpler but ties up threads/processes for full audio duration.
+
+## Tests
+```bash
+docker compose run --rm web python manage.py test
+```
+
+
+## Known caveats / TODOs
+- Celery runs fire-and-forget (no result backend). If you need task result tracking, enable a backend (Redis/RPC) and adjust settings.
+
+---
+
