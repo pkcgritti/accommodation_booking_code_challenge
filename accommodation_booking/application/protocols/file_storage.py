@@ -1,0 +1,6 @@
+from typing import Protocol
+
+
+class FileStorage(Protocol):
+    def save_file_as(self, audio_file: bytes, file_id: str): ...
+    def load_file(self, file_id: str) -> bytes: ...

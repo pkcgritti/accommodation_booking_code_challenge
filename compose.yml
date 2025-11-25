@@ -11,11 +11,42 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - SECRET_KEY=django-insecure-your-secret-key-here
+      - CELERY_BROKER_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672//
+      - OPENAI_API_KEY=your-api-key
     depends_on:
       - postgres
+      - rabbitmq
     volumes:
       - .:/app
+      - voicenote_data:/app/data
     command: python manage.py runserver 0.0.0.0:8006
+
+  celery_worker:
+    build: .
+    environment: 
+      - DEBUG=True
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=accommodation_booking
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - SECRET_KEY=django-insecure-your-secret-key-here
+      - CELERY_BROKER_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672//
+      - OPENAI_API_KEY=your-api-key
+    depends_on:
+      - postgres
+      - rabbitmq
+    volumes:
+      - .:/app
+      - voicenote_data:/app/data
+    command: celery -A accommodation_booking worker -l info
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbitmq
+      - RABBITMQ_DEFAULT_PASS=rabbitmq
 
   postgres:
     image: postgres:15-alpine
@@ -30,3 +61,4 @@ services:
 
 volumes:
   postgres_data: 
+  voicenote_data:

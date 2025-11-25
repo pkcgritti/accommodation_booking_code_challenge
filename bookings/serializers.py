@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from accommodations.models import Accommodation
 
-from .models import Booking
+from .models import Booking, VoiceNote
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -68,3 +68,14 @@ class BookingSerializer(serializers.ModelSerializer):
         booking = Booking(accommodation=accommodation, **validated_data)
         booking.save()
         return booking
+
+class VoiceNoteSerializer(serializers.ModelSerializer):
+    """Serializer for VoiceNote model"""
+
+    booking_id = serializers.IntegerField(source="booking.id")
+
+    class Meta:
+        model = VoiceNote
+        fields = ["id", "booking_id", "transcript", "status", "file_name", "file_type"]
+        read_only_fields = ["id", "booking_id", "transcript", "status", "file_name", "file_type"]
+
