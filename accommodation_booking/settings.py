@@ -182,6 +182,9 @@ LOGGING = {
     },
 }
 
+# Transcription provider selection
+TRANSCRIPTION_PROVIDER = os.getenv("TRANSCRIPTION_PROVIDER", "local")
+
 # OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "whisper-1")

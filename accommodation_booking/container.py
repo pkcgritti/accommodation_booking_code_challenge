@@ -11,6 +11,9 @@ from accommodation_booking.application.usecases.create_voice_note import (
     CreateVoiceNoteUseCase,
 )
 from accommodation_booking.infrastructure.local.file_storage import LocalFileStorage
+from accommodation_booking.infrastructure.local.transcription_service import (
+    LocalTranscriptionService,
+)
 from accommodation_booking.infrastructure.openai.transcription_service import (
     OpenAITranscriptionService,
 )
@@ -30,14 +33,22 @@ class ApplicationContainer(containers.DeclarativeContainer):
 
     file_storage: providers.Provider[FileStorage] = providers.Factory(
         LocalFileStorage,
-        data_directory=providers.Factory(Path, "./data"),
+        data_directory=providers.Factory(Path, config.local_file_storage_directory),
     )
 
-    transcription_service: providers.Provider[TranscriptionService] = providers.Factory(
-        OpenAITranscriptionService,
-        api_key=config.openai.api_key,
-        model=config.openai.model,
-        language=config.openai.language,
+    transcription_service: providers.Provider[TranscriptionService] = (
+        providers.Selector(
+            config.transcription_provider,
+            local=providers.Singleton(
+                LocalTranscriptionService,
+            ),
+            openai=providers.Factory(
+                OpenAITranscriptionService,
+                api_key=config.openai.api_key,
+                model=config.openai.model,
+                language=config.openai.language,
+            ),
+        )
     )
 
     # UseCases

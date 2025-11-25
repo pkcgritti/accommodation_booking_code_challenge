@@ -2,3 +2,6 @@ openai:
   api_key: ${OPENAI_API_KEY}
   model: ${OPENAI_MODEL:whisper-1}
   language: ${OPENAI_LANGUAGE:en}
+local_file_storage_directory: ${LOCAL_FILE_STORAGE_DIRECTORY:./data}
+transcription_provider: ${TRANSCRIPTION_PROVIDER:local}
+

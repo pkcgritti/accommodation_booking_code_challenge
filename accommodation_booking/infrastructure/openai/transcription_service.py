@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import final
 
 import requests
@@ -6,6 +7,8 @@ from accommodation_booking.application.protocols.transcription_service import (
     TranscriptionResult,
     TranscriptionService,
 )
+
+logger = getLogger(__name__)
 
 
 @final
@@ -22,6 +25,10 @@ class OpenAITranscriptionService(TranscriptionService):
         file_name: str,
         file_type: str,
     ) -> TranscriptionResult:
+        logger.debug(
+            "Transcribing %s using %s", file_type, "OpenAITranscriptionService"
+        )
+
         response = requests.post(
             url=self.OPENAI_ENDPOINT,
             headers=self.headers,
