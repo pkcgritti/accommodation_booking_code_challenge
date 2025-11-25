@@ -45,6 +45,7 @@ class VoiceNote(models.Model):
     )
     file_name = models.TextField(blank=True)
     file_type = models.CharField(max_length=30, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     @property
     def storage_key(self) -> VoiceNoteStorageKey:

@@ -76,6 +76,6 @@ class VoiceNoteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VoiceNote
-        fields = ["id", "booking_id", "transcript", "status", "file_name", "file_type"]
-        read_only_fields = ["id", "booking_id", "transcript", "status", "file_name", "file_type"]
+        fields = ["id", "booking_id", "transcript", "status", "file_name", "file_type", "created_at"]
+        read_only_fields = ["id", "booking_id", "transcript", "status", "file_name", "file_type", "created_at"]
 
