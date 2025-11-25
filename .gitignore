@@ -4,6 +4,14 @@ __pycache__/
 
 # Local config
 .env
+uv.lock
 
 # Data directory
 data/
+
+# Log files
+*.log
+
+# MacOS files
+.DS_Store
+.DS_Store/
