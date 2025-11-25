@@ -184,8 +184,8 @@ LOGGING = {
 
 # OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPANAI_MODEL", "whisper-1")
-OPENAI_LANGAGUE = os.getenv("OPENAI_LANGUAGE", "en")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "whisper-1")
+OPENAI_LANGUAGE = os.getenv("OPENAI_LANGUAGE", "en")
 
 
 # Celery
