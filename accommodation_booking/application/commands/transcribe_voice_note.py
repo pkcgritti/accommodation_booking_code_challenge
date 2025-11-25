@@ -8,6 +8,9 @@ from accommodation_booking.application.protocols.transcription_service import (
 from bookings.models import VoiceNote
 from bookings.valueobjects import VoiceNoteStorageKey
 
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 @shared_task
 @inject
@@ -19,6 +22,14 @@ def transcribe_voice_note_command(
     file_storage: FileStorage = Provide["file_storage"],
     transcription_service: TranscriptionService = Provide["transcription_service"],
 ):
+    logger.debug(
+        "Transcribing (booking_id: %d, voice_note_id: %d, file_name: %s, file_type: %s",
+        booking_id,
+        voice_note_id,
+        file_name,
+        file_type,
+    )
+
     storage_key = VoiceNoteStorageKey(
         booking_id=booking_id, voice_note_id=voice_note_id
     )

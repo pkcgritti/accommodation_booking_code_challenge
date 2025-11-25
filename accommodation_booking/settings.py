@@ -129,6 +129,59 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
+# Logging
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {
+            "format": "[{asctime}: {levelname}/{module}] {message}",
+            "style": "{",
+        },
+        "verbose": {
+            "format": "[{levelname:7s} {asctime}] [{module} {process:d} {thread:d}] {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "errorfile": {
+            "class": "logging.FileHandler",
+            "formatter": "verbose",
+            "filename": "errors.log",
+            "level": "ERROR",
+        },
+    },
+    "root": {
+        "handlers": ["errorfile"],
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+            "propagate": True,
+        },
+        "accommodation_booking": {
+            "handlers": ["console"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": True,
+        },
+        "accommodations": {
+            "handlers": ["console"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": True,
+        },
+        "bookings": {
+            "handlers": ["console"],
+            "level": os.getenv("APP_LOG_LEVEL", "INFO"),
+            "propagate": True,
+        }
+    },
+}
+
 # OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPANAI_MODEL", "whisper-1")

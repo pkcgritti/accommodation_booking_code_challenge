@@ -11,7 +11,7 @@ from accommodation_booking.container import ApplicationContainer, UseCases
 from .models import Booking, VoiceNote
 from .serializers import BookingSerializer, VoiceNoteSerializer
 
-logger = getLogger("django.request")
+logger = getLogger(__name__)
 
 
 class BookingListCreateView(generics.ListCreateAPIView):
@@ -119,7 +119,9 @@ class VoiceNoteListCreateView(generics.ListCreateAPIView):
     ):
         audio_file_handle = request.FILES.get("audio_file")
         if not audio_file_handle:
-            return Response({"audio_file": ["File required"]}, status=400)
+            return Response(
+                {"audio_file": ["File required"]}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         booking_id = kwargs["booking_id"]
         audio_file = audio_file_handle.read()
@@ -128,13 +130,15 @@ class VoiceNoteListCreateView(generics.ListCreateAPIView):
 
         try:
             voice_note = usecases.create_voice_note.execute(
-                booking_id, audio_file, file_name, file_type
+                booking_id,
+                audio_file,
+                file_name,
+                file_type,
             )
         except Exception as ex:
             logger.exception(ex)
             return Response(
-                {"message": "failed", "cause": str(ex)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                {"message": str(ex)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
         serializer = self.get_serializer(voice_note)
