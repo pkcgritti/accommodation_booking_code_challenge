@@ -4,7 +4,7 @@
 
 Built and operated a mobile-optimized facial-clustering pipeline for iOS,
 consisting of: Face Detection → Landmark Detection → Face Alignment → Face
-Embedding → Clustering clustering. The system organized user photo libraries
+Embedding → Facial clustering. The system organized user photo libraries
 entirely on-device, with accuracy comparable to ArcFace-ResNet50 but at ~50% of
 the compute cost.
 
